@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Task Manager</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script src="https://unpkg.com/react@18.2.0/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script type="text/babel">
+      // Your React code will go here
+      // index.js
+
+const { useState, useEffect } = React;
+const axios = window.axios;
+
+function App() {
+  const [tasks, setTasks] = useState([]);
+  const [newTask, setNewTask] = useState('');
+  const [assignee, setAssignee] = useState('');
+  const [filter, setFilter] = useState('');
+
+  useEffect(() => {
+    axios.get('http://localhost:3001/todos')
+      .then(response => setTasks(response.data))
+      .catch(error => console.error(error));
+  }, []);
+
+  const addTask = () => {
+    axios.post('http://localhost:3001/todos', { name: newTask, assignee, completed: false })
+      .then(response => setTasks([...tasks, response.data]))
+      .catch(error => console.error(error));
+  };
+
+  const deleteTask = id => {
+    axios.delete(`http://localhost:3001/todos/${id}`)
+      .then(() => setTasks(tasks.filter(task => task.id !== id)))
+      .catch(error => console.error(error));
+  };
+
+  const filteredTasks = tasks.filter(task => 
+    filter === '' || task.assignee === filter
+  );
+
+  return (
+    <div>
+      <h1>Task Manager</h1>
+      <TaskForm 
+        newTask={newTask}
+        setNewTask={setNewTask}
+        assignee={assignee}
+        setAssignee={setAssignee}
+        addTask={addTask}
+      />
+      <TaskFilter setFilter={setFilter} />
+      <TaskList tasks={filteredTasks} deleteTask={deleteTask} />
+    </div>
+  );
+}
+
+function TaskForm({ newTask, setNewTask, assignee, setAssignee, addTask }) {
+  return (
+    <div>
+      <input 
+        type="text" 
+        value={newTask}
+        onChange={e => setNewTask(e.target.value)}
+        placeholder="New task"
+      />
+      <input 
+        type="text"
+        value={assignee}
+        onChange={e => setAssignee(e.target.value)}
+        placeholder="Assignee"
+      />
+      <button onClick={addTask}>Add Task</button>
+    </div>
+  );
+}
+
+function TaskFilter({ setFilter }) {
+  return (
+    <div>
+      <input 
+        type="text"
+        onChange={e => setFilter(e.target.value)}
+        placeholder="Filter by assignee"
+      />
+    </div>
+  );
+}
+
+function TaskList({ tasks, deleteTask }) {
+  return (
+    <ul>
+      {tasks.map(task => (
+        <li key={task.id}>
+          {task.name} - {task.assignee}
+          <button onClick={() => deleteTask(task.id)}>Delete</button>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+ReactDOM.render(<App />, document.getElementById('root'));
+
+    </script>
+  </body>
+</html>
